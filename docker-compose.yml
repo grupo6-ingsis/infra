@@ -1,0 +1,36 @@
+services:
+  # === SNIPPET ENGINE ===
+  snippet-engine-db:
+    image: postgres:16
+    container_name: snippet_engine_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER_ENGINE}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_ENGINE}
+      POSTGRES_DB: ${POSTGRES_DB_ENGINE}
+    ports:
+      - ${DB_PORT_ENGINE}:5432
+    volumes:
+      - snippet_engine_data:/var/lib/postgresql/data
+    networks:
+      - group6-gudelker-network
+
+  snippet-engine:
+    image: ghcr.io/grupo6-ingsis/snippet-engine2:latest
+    platform: linux/amd64
+    container_name: snippet_engine
+    depends_on:
+      - snippet-engine-db
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL_ENGINE}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_ENGINE}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_ENGINE}
+    ports:
+      - ${SERVER_PORT_ENGINE}:8080
+    networks:
+      - group6-gudelker-network
+
+volumes:
+  snippet_engine_data:
+
+networks:
+  group6-gudelker-network:
