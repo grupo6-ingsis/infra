@@ -1,4 +1,3 @@
-#!/bin/bash
 # -----------------------------
 # Script para levantar Docker Compose con login automático a GHCR
 # -----------------------------
@@ -18,9 +17,16 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+sudo docker compose down
+
+# pull latest versions
+sudo docker-compose pull snippet-service
+sudo docker-compose pull snippet-engine
+sudo docker-compose pull authorization
+
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
-docker compose up -d
+sudo docker compose up --build -d
 
 # Mostrar estado
-docker compose ps
+sudo docker compose ps
