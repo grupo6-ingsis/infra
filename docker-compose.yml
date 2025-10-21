@@ -15,7 +15,7 @@ services:
       - group6-gudelker-network
 
   snippet-engine:
-    image: ghcr.io/grupo6-ingsis/snippet-engine2:latest
+    image: ${SNIPPET_ENGINE_DEV_IMAGE}
     platform: linux/amd64
     container_name: snippet_engine
     depends_on:
@@ -44,7 +44,7 @@ services:
       - group6-gudelker-network
 
   snippet-service:
-    image: ghcr.io/grupo6-ingsis/snippet-service2:latest
+    image: ${SNIPPET_SERVICE_DEV_IMAGE}
     platform: linux/amd64
     container_name: snippet_service
     depends_on:
@@ -73,7 +73,7 @@ services:
       - group6-gudelker-network
 
   authorization:
-    image: ghcr.io/grupo6-ingsis/authorization2:latest
+    image: ${AUTH_SERVICE_DEV_IMAGE}
     platform: linux/amd64
     container_name: authorization
     depends_on:
