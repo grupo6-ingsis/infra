@@ -1,4 +1,35 @@
-name: infraci.yml
-on:
+name: CD Infra
 
+on:
+  push:
+    branches:
+      - main
 jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy Dev
+        if: github.ref == 'refs/heads/dev'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEV_VM_IP }}
+          username: ${{ secrets.DEV_VM_USER }}
+          key: ${{ secrets.DEV_VM_SSH_KEY }}
+          script: |
+            export SNIPPET_SERVICE_IMAGE=tu-org/snippet-service-dev:latest
+            cd ~/infra
+            git pull
+            docker-compose up -d
+
+      - name: Deploy Prod
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PROD_VM_IP }}
+          username: ${{ secrets.PROD_VM_USER }}
+          key: ${{ secrets.PROD_VM_SSH_KEY }}
+          script: |
+            export SNIPPET_SERVICE_IMAGE=tu-org/snippet-service:latest
+            cd ~/infra
+            git pull
+            docker-compose up -d
