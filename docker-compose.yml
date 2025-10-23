@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_ENGINE}
       POSTGRES_DB: ${POSTGRES_DB_ENGINE}
     ports:
-      - ${DB_PORT_ENGINE}:5432
+      - 5433:5432
     volumes:
       - snippet_engine_data:/var/lib/postgresql/data
     networks:
@@ -25,7 +25,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_ENGINE}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_ENGINE}
     ports:
-      - ${SERVER_PORT_ENGINE}:8080
+      - 8081:8080
     networks:
       - group6-gudelker-network
 
@@ -37,7 +37,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE}
       POSTGRES_DB: ${POSTGRES_DB_SERVICE}
     ports:
-      - ${DB_PORT_SERVICE}:5432
+      - 5434:5432
     volumes:
       - snippet_service_data:/var/lib/postgresql/data
     networks:
@@ -54,7 +54,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_SERVICE}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_SERVICE}
     ports:
-      - ${SERVER_PORT_SERVICE}:8080
+      - 8082:8080
     networks:
       - group6-gudelker-network
 
@@ -66,7 +66,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_AUTHORIZATION}
       POSTGRES_DB: ${POSTGRES_DB_AUTHORIZATION}
     ports:
-      - ${DB_PORT_AUTHORIZATION}:5432
+      - 5432:5432
     volumes:
       - authorization_data:/var/lib/postgresql/data
     networks:
@@ -83,7 +83,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_AUTHORIZATION}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_AUTHORIZATION}
     ports:
-      - ${SERVER_PORT_AUTHORIZATION}:8080
+      - 8080:8080
     networks:
       - group6-gudelker-network
 
