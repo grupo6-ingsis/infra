@@ -19,7 +19,7 @@ jobs:
           key: ${{ secrets.RSA_VM_KEY }}
           script: |
             cd ~/infra
-            git switch dev
+            sudo git switch dev
             ./start-docker.sh
 
       - name: Deploy Prod
@@ -31,5 +31,5 @@ jobs:
           key: ${{ secrets.RSA_VM_KEY }}
           script: |
             cd ~/infra
-            git switch main
+            sudo git switch main
             ./start-docker.sh
