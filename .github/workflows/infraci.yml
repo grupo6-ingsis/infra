@@ -22,7 +22,7 @@ jobs:
             export ${SNIPPET_ENGINE_DEV_IMAGE}
             export ${AUTH_SERVICE_DEV_IMAGE}
             cd ~/infra
-            git switch dev
+            sudo git switch dev
             docker-compose up -d
 
       - name: Deploy Prod
@@ -37,4 +37,5 @@ jobs:
             export ${SNIPPET_ENGINE_IMAGE}
             export ${AUTH_SERVICE_IMAGE}
             cd ~/infra
+            sudo git switch main
             docker-compose up -d
