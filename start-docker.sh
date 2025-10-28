@@ -20,6 +20,7 @@ fi
 sudo docker compose down
 
 # pull latest versions
+git pull
 sudo docker-compose pull snippet-service
 sudo docker-compose pull snippet-engine
 sudo docker-compose pull authorization

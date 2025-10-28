@@ -20,7 +20,6 @@ jobs:
           script: |
             cd ~/infra
             git switch dev
-            git pull
             ./start-docker.sh
 
       - name: Deploy Prod
@@ -33,5 +32,4 @@ jobs:
           script: |
             cd ~/infra
             git switch main
-            git pull
             ./start-docker.sh
