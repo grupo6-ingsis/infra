@@ -20,9 +20,9 @@ fi
 sudo docker compose down
 
 # Pull images with specific tags from .env
-docker pull "$SNIPPET_SERVICE_IMAGE"
-docker pull "$SNIPPET_ENGINE_IMAGE"
-docker pull "$AUTH_SERVICE_IMAGE"
+sudo docker pull "$SNIPPET_SERVICE_IMAGE"
+sudo docker pull "$SNIPPET_ENGINE_IMAGE"
+sudo docker pull "$AUTH_SERVICE_IMAGE"
 
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
