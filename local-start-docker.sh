@@ -17,16 +17,16 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-sudo docker compose down
+docker compose down
 
 # Pull images with specific tags from .env
-docker pull "$SNIPPET_SERVICE_DEV_IMAGE"
-docker pull "$SNIPPET_ENGINE_DEV_IMAGE"
-docker pull "$AUTH_SERVICE_DEV_IMAGE"
+docker pull "$SNIPPET_SERVICE_IMAGE"
+docker pull "$SNIPPET_ENGINE_IMAGE"
+docker pull "$AUTH_SERVICE_IMAGE"
 
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
-sudo docker compose up --build -d
+docker compose up --build -d
 
 # Mostrar estado
-sudo docker compose ps
+docker compose ps
