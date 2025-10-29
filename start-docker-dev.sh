@@ -19,11 +19,10 @@ fi
 
 sudo docker compose down
 
-# pull latest versions
-sudo git pull
-sudo docker-compose pull snippet-service
-sudo docker-compose pull snippet-engine
-sudo docker-compose pull authorization
+# Pull images with specific tags from .env
+docker pull "$SNIPPET_SERVICE_DEV_IMAGE"
+docker pull "$SNIPPET_ENGINE_DEV_IMAGE"
+docker pull "$AUTH_SERVICE_DEV_IMAGE"
 
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
