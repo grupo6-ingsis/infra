@@ -10,17 +10,23 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
+      - name: Deploy to Dev VM
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.VM_PUBLIC_IP_DEV }}
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.RSA_VM_KEY }}
           script: |
-            export ${SNIPPET_SERVICE_IMAGE}
-            export ${SNIPPET_ENGINE_IMAGE}
-            export ${AUTH_SERVICE_IMAGE}
+            cd ~/infra
+            sudo git pull
+            ./start-docker.sh
+      - name: Deploy to Main VM
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_PUBLIC_IP_MAIN }}
+          username: ${{ secrets.AZURE_USER }}
+          key: ${{ secrets.RSA_VM_KEY }}
+          script: |
             cd ~/infra
             sudo git pull
             ./start-docker.sh
