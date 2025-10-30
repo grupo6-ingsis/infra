@@ -2,7 +2,7 @@ services:
   # === SNIPPET ENGINE ===
   snippet-engine-db:
     image: postgres:16
-    container_name: snippet_engine_db
+    container_name: snippet-engine-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_ENGINE}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_ENGINE}
@@ -34,7 +34,7 @@ services:
 
   snippet-service-db:
     image: postgres:16
-    container_name: snippet_service_db
+    container_name: snippet-service-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_SERVICE}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE}
@@ -49,7 +49,7 @@ services:
   snippet-service:
     image: ${SNIPPET_SERVICE_IMAGE}
     platform: linux/amd64
-    container_name: snippet_service
+    container_name: snippet-service
     depends_on:
       - snippet-service-db
     environment:
@@ -67,7 +67,7 @@ services:
 
   authorization-db:
     image: postgres:16
-    container_name: authorization_db
+    container_name: authorization-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_AUTHORIZATION}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_AUTHORIZATION}
