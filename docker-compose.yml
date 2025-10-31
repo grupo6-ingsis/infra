@@ -1,8 +1,23 @@
 services:
+  # === NGINX REVERSE PROXY ===
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-reverse-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - authorization
+      - snippet-engine
+      - snippet-service
+    networks:
+      - group6-gudelker-network
+    restart: unless-stopped
   # === SNIPPET ENGINE ===
   snippet-engine-db:
     image: postgres:16
-    container_name: snippet_engine_db
+    container_name: snippet-engine-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_ENGINE}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_ENGINE}
@@ -13,11 +28,12 @@ services:
       - snippet_engine_data:/var/lib/postgresql/data
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
   snippet-engine:
     image: ${SNIPPET_ENGINE_IMAGE}
     platform: linux/amd64
-    container_name: snippet_engine
+    container_name: snippet-engine
     depends_on:
       - snippet-engine-db
     environment:
@@ -27,14 +43,15 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
-    ports:
-      - 8081:8080
+    expose:
+      - "8080"
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
   snippet-service-db:
     image: postgres:16
-    container_name: snippet_service_db
+    container_name: snippet-service-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_SERVICE}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_SERVICE}
@@ -45,11 +62,12 @@ services:
       - snippet_service_data:/var/lib/postgresql/data
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
   snippet-service:
     image: ${SNIPPET_SERVICE_IMAGE}
     platform: linux/amd64
-    container_name: snippet_service
+    container_name: snippet-service
     depends_on:
       - snippet-service-db
     environment:
@@ -60,14 +78,15 @@ services:
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       AUTH0_TOKEN_URL: ${AUTH0_TOKEN_URL}
-    ports:
-      - 8082:8080
+    expose:
+      - "8080"
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
   authorization-db:
     image: postgres:16
-    container_name: authorization_db
+    container_name: authorization-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER_AUTHORIZATION}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_AUTHORIZATION}
@@ -78,6 +97,7 @@ services:
       - authorization_data:/var/lib/postgresql/data
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
   authorization:
     image: ${AUTH_SERVICE_IMAGE}
@@ -90,10 +110,11 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_AUTHORIZATION}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_AUTHORIZATION}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-    ports:
-      - 8080:8080
+    expose:
+      - "8080"
     networks:
       - group6-gudelker-network
+    restart: unless-stopped
 
 volumes:
   snippet_engine_data:
