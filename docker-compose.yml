@@ -116,10 +116,41 @@ services:
       - group6-gudelker-network
     restart: unless-stopped
 
+  asset-service:
+      container_name: asset-service
+      image: ghcr.io/austral-ingsis/snippet-asset-service:main.14
+      expose:
+        - "8080"
+      environment:
+        AZURE_HOST: "http://azurite"
+        NEW_RELIC_APP_NAME: "asset-service"
+        NEW_RELIC_AGENT_ENABLED: false
+      depends_on:
+        - azurite
+      networks:
+        - group6-gudelker-network
+      restart: unless-stopped
+
+  azurite:
+      image: mcr.microsoft.com/azure-storage/azurite
+      container_name: azurite
+      hostname: azurite
+      restart: always
+      ports:
+        - "10000:10000"
+        - "10001:10001"
+        - "10002:10002"
+      volumes:
+        - blob:/workspace
+      networks:
+        - group6-gudelker-network
+
 volumes:
   snippet_engine_data:
   snippet_service_data:
   authorization_data:
+  blob:
+      external: false
 
 networks:
   group6-gudelker-network:
