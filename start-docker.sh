@@ -17,6 +17,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Generar nginx.conf desde template
+echo "Generando nginx.conf desde template..."
+envsubst '${NGINX_SERVER_NAME} ${NGINX_DOMAIN}' < nginx.conf.template > nginx.conf
+
+
 sudo docker compose down
 
 # Pull images with specific tags from .env
