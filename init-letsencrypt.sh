@@ -60,7 +60,7 @@ fi
 echo "### Creando certificado dummy para ${domains[0]}..."
 path="/etc/letsencrypt/live/${domains[0]}"
 mkdir -p "$data_path/conf/live/${domains[0]}"
-docker compose run --rm --entrypoint "\
+sudo docker compose run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
@@ -69,12 +69,12 @@ echo
 
 # Iniciar nginx
 echo "### Iniciando nginx..."
-docker compose up --force-recreate -d nginx
+sudo docker compose up --force-recreate -d nginx
 echo
 
 # Eliminar certificado dummy
 echo "### Eliminando certificado dummy para ${domains[0]}..."
-docker compose run --rm --entrypoint "\
+sudo docker compose run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/${domains[0]} && \
   rm -Rf /etc/letsencrypt/archive/${domains[0]} && \
   rm -Rf /etc/letsencrypt/renewal/${domains[0]}.conf" certbot
@@ -93,7 +93,7 @@ for domain in "${domains[@]}"; do
 done
 
 # Solicitar certificado
-docker compose run --rm --entrypoint "\
+sudo docker compose run --rm --entrypoint "\
   certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
     $domain_args \
@@ -105,7 +105,7 @@ echo
 
 # Recargar nginx
 echo "### Recargando nginx..."
-docker compose exec nginx nginx -s reload
+sudo docker compose exec nginx nginx -s reload
 
 echo -e "${GREEN}### ¡Listo! Certificado SSL configurado correctamente.${NC}"
 echo "### El certificado se renovará automáticamente cada 12 horas."
