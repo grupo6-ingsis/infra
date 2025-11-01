@@ -23,6 +23,9 @@ docker compose down
 docker pull "$SNIPPET_SERVICE_IMAGE"
 docker pull "$SNIPPET_ENGINE_IMAGE"
 docker pull "$AUTH_SERVICE_IMAGE"
+docker pull ghcr.io/austral-ingsis/snippet-asset-service:main.14
+docker pull mcr.microsoft.com/azure-storage/azurite
+
 
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
