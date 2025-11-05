@@ -29,6 +29,19 @@ services:
     networks:
       - group6-gudelker-network
 
+  # === REDIS EVENT BUS ===
+  redis:
+    image: redis:7-alpine
+    container_name: redis-event-bus
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - group6-gudelker-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
   # === SNIPPET ENGINE ===
   snippet-engine-db:
     image: postgres:16
@@ -51,6 +64,7 @@ services:
     container_name: snippet-engine
     depends_on:
       - snippet-engine-db
+      - redis
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL_ENGINE}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME_ENGINE}
@@ -58,6 +72,8 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     expose:
       - "8080"
     networks:
@@ -93,6 +109,8 @@ services:
       AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       AUTH0_TOKEN_URL: ${AUTH0_TOKEN_URL}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     expose:
       - "8080"
     networks:
@@ -166,6 +184,7 @@ volumes:
   authorization_data:
   blob:
       external: false
+  redis_data:
 
 networks:
   group6-gudelker-network:
