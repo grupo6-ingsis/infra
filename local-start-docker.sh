@@ -29,7 +29,7 @@ docker pull mcr.microsoft.com/azure-storage/azurite
 
 # Levantar los contenedores
 echo "Levantando Docker Compose..."
-docker compose up --build -d
+docker compose up --build --pull always -d
 
 # Mostrar estado
 docker compose ps
