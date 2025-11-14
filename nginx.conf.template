@@ -123,23 +123,15 @@ http {
             }
         }
 
-        # Frontend - todas las demás rutas
-        location / {
-            proxy_pass http://frontend_service;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-
-            # Intenta servir el archivo, si no existe, devuelve index.html
-            try_files $uri $uri/ /index.html;
-        }
-
         # Archivos estáticos del frontend con cache
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-            proxy_pass http://frontend_service;
             expires 1y;
             add_header Cache-Control "public, immutable";
+        }
+
+        # Frontend - todas las demás rutas (debe ir al final)
+        location / {
+            try_files $uri $uri/ /index.html;
         }
     }
 }

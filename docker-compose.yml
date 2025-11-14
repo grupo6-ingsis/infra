@@ -10,6 +10,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certbot/conf:/etc/letsencrypt:ro  # Certificados SSL
       - ./certbot/www:/var/www/certbot:ro   # Para validación ACME
+      - frontend-dist:/usr/share/nginx/html:ro
     depends_on:
       - authorization
       - snippet-engine
@@ -155,8 +156,8 @@ services:
     image: ${FRONTEND_IMAGE}
     platform: linux/amd64
     container_name: frontend
-    expose:
-      - "80"
+    volumes:
+      - frontend-dist:/usr/share/nginx/html
     networks:
       - group6-gudelker-network
     restart: unless-stopped
@@ -194,6 +195,7 @@ volumes:
   snippet_engine_data:
   snippet_service_data:
   authorization_data:
+  frontend-dist:
   blob:
       external: false
   redis_data:
