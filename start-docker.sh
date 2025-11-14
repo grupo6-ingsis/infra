@@ -28,6 +28,7 @@ sudo docker compose down
 sudo docker pull "$SNIPPET_SERVICE_IMAGE"
 sudo docker pull "$SNIPPET_ENGINE_IMAGE"
 sudo docker pull "$AUTH_SERVICE_IMAGE"
+sudo docker pull "$FRONTEND_IMAGE"
 sudo docker pull ghcr.io/austral-ingsis/snippet-asset-service:main.14
 sudo docker pull mcr.microsoft.com/azure-storage/azurite
 

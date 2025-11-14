@@ -14,6 +14,7 @@ services:
       - authorization
       - snippet-engine
       - snippet-service
+      - frontend
     networks:
       - group6-gudelker-network
     restart: unless-stopped
@@ -145,6 +146,17 @@ services:
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
     expose:
       - "8080"
+    networks:
+      - group6-gudelker-network
+    restart: unless-stopped
+
+  # === FRONTEND ===
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    platform: linux/amd64
+    container_name: frontend
+    expose:
+      - "80"
     networks:
       - group6-gudelker-network
     restart: unless-stopped

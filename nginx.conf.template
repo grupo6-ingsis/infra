@@ -13,6 +13,10 @@ http {
     proxy_read_timeout 60s;
     client_max_body_size 10M;
 
+     # MIME types
+     include /etc/nginx/mime.types;
+     default_type application/octet-stream;
+
     # Upstream para cada servicio
     upstream authorization_service {
         server authorization:8080;
@@ -24,6 +28,10 @@ http {
 
     upstream snippet_service {
         server snippet-service:8080;
+    }
+
+     upstream frontend_service {
+        server frontend:80;
     }
 
     server {
@@ -115,10 +123,23 @@ http {
             }
         }
 
-        # Página de inicio o status
+        # Frontend - todas las demás rutas
         location / {
-            return 200 "Nginx Reverse Proxy - Services:\n- /auth - Authorization Service\n- /engine - Snippet Engine\n- /service - Snippet Service\n";
-            add_header Content-Type text/plain;
+            proxy_pass http://frontend_service;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Intenta servir el archivo, si no existe, devuelve index.html
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Archivos estáticos del frontend con cache
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            proxy_pass http://frontend_service;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
         }
     }
 }
