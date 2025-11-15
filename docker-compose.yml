@@ -156,6 +156,13 @@ services:
     image: ${FRONTEND_IMAGE}
     platform: linux/amd64
     container_name: frontend
+    environment:
+      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+      VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+      VITE_TOKEN_URL: ${VITE_TOKEN_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL}
     volumes:
       - frontend-dist:/usr/share/nginx/html
     networks:
