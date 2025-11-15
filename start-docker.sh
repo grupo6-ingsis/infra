@@ -22,7 +22,7 @@ echo "Generando nginx.conf desde template..."
 envsubst '${NGINX_SERVER_NAME} ${NGINX_DOMAIN}' < nginx.conf.template > nginx.conf
 
 
-sudo docker compose down
+sudo docker compose down -v
 
 # Pull images with specific tags from .env
 sudo docker pull "$SNIPPET_SERVICE_IMAGE"
