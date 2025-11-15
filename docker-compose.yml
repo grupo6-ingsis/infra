@@ -163,8 +163,6 @@ services:
       VITE_TOKEN_URL: ${VITE_TOKEN_URL}
       FRONTEND_URL: ${FRONTEND_URL}
       BACKEND_URL: ${BACKEND_URL}
-    volumes:
-      - frontend-dist:/usr/share/nginx/html
     networks:
       - group6-gudelker-network
     restart: unless-stopped
