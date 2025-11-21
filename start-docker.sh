@@ -1,41 +1,87 @@
+#!/bin/bash
 # -----------------------------
-# Script para levantar Docker Compose con login automático a GHCR
+# Script de Deploy con recreación selectiva
 # -----------------------------
+
+set -e
+
 # Cargar variables del .env
-set -a           # exporta todas las variables automáticamente
+set -a
 source .env
 set +a
-# Variables de entorno (setearlas antes de ejecutar el script o exportarlas en .bashrc/.zshrc)
+
 GHCR_USER="${GHCR_USER}"
 GHCR_PAT="${GHCR_PAT}"
 
-# Login automático en GHCR
+# -----------------------------
+# Login GHCR
+# -----------------------------
 echo "Haciendo login en GHCR..."
 echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-if [ $? -ne 0 ]; then
-  echo "Error: no se pudo loguear en GHCR"
-  exit 1
-fi
+echo "OK!"
 
-# Generar nginx.conf desde template
-echo "Generando nginx.conf desde template..."
-envsubst '${NGINX_SERVER_NAME} ${NGINX_DOMAIN}' < nginx.conf.template > nginx.conf
+# -----------------------------
+# Función: recrear servicio solo si cambió la imagen
+# -----------------------------
+recreate_if_changed() {
+  SERVICE_NAME="$1"
+  IMAGE="$2"
+  EXTRA_SERVICES="$3"
 
+  echo "-----------------------------------------------"
+  echo "Chequeando imagen para: $SERVICE_NAME"
+  echo "Imagen: $IMAGE"
+  echo "-----------------------------------------------"
 
-sudo docker compose down -v
+  # Obtener digest remoto
+  REMOTE_DIGEST=$(docker pull "$IMAGE" | grep Digest | awk '{print $2}')
 
-# Pull images with specific tags from .env
-sudo docker pull "$SNIPPET_SERVICE_IMAGE"
-sudo docker pull "$SNIPPET_ENGINE_IMAGE"
-sudo docker pull "$AUTH_SERVICE_IMAGE"
-sudo docker pull "$FRONTEND_IMAGE"
-sudo docker pull ghcr.io/austral-ingsis/snippet-asset-service:main.14
-sudo docker pull mcr.microsoft.com/azure-storage/azurite
+  # Obtener digest local
+  LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | cut -d'@' -f2)
 
+  # Comparación
+  if [ -z "$LOCAL_DIGEST" ]; then
+    echo "No se encontró digest local → Instalación inicial"
+    CHANGED=1
+  elif [ "$LOCAL_DIGEST" != "$REMOTE_DIGEST" ]; then
+    echo "La imagen cambió → RECREANDO $SERVICE_NAME"
+    CHANGED=1
+  else
+    echo "La imagen NO cambió → NADA QUE HACER"
+    CHANGED=0
+  fi
 
-# Levantar los contenedores
-echo "Levantando Docker Compose..."
-sudo docker compose up --build --pull always -d
+  if [ $CHANGED -eq 1 ]; then
+    echo "→ Borrando contenedores y volúmenes solo de $SERVICE_NAME"
+    docker compose rm -sfv $SERVICE_NAME $EXTRA_SERVICES
 
-# Mostrar estado
-sudo docker compose ps
+    echo "→ Levantando nuevamente $SERVICE_NAME"
+    docker compose up -d $EXTRA_SERVICES $SERVICE_NAME
+
+    echo "✔ $SERVICE_NAME actualizado!"
+    echo ""
+  fi
+}
+
+# -----------------------------
+# Ejecutar para cada servicio
+# -----------------------------
+
+# SNIPPET SERVICE
+recreate_if_changed "snippet-service" "$SNIPPET_SERVICE_IMAGE" "snippet-service-db"
+
+# SNIPPET ENGINE
+recreate_if_changed "snippet-engine" "$SNIPPET_ENGINE_IMAGE" "snippet-engine-db"
+
+# AUTHORIZATION
+recreate_if_changed "authorization" "$AUTH_SERVICE_IMAGE" "authorization-db"
+
+# FRONTEND
+recreate_if_changed "frontend" "$FRONTEND_IMAGE"
+
+echo ""
+echo "-----------------------------------------------"
+echo "Estado final de los contenedores:"
+docker compose ps
+echo "-----------------------------------------------"
+echo "Deploy completo!"
