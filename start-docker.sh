@@ -34,10 +34,10 @@ recreate_if_changed() {
   echo "-----------------------------------------------"
 
   # Obtener digest remoto
-  REMOTE_DIGEST=$(docker pull "$IMAGE" | grep Digest | awk '{print $2}')
+  REMOTE_DIGEST=$(sudo docker pull "$IMAGE" | grep Digest | awk '{print $2}')
 
   # Obtener digest local
-  LOCAL_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | cut -d'@' -f2)
+  LOCAL_DIGEST=$(sudo docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | cut -d'@' -f2)
 
   # Comparación
   if [ -z "$LOCAL_DIGEST" ]; then
@@ -53,10 +53,10 @@ recreate_if_changed() {
 
   if [ $CHANGED -eq 1 ]; then
     echo "→ Borrando contenedores y volúmenes solo de $SERVICE_NAME"
-    docker compose rm -sfv $SERVICE_NAME $EXTRA_SERVICES
+    sudo docker compose rm -sfv $SERVICE_NAME $EXTRA_SERVICES
 
     echo "→ Levantando nuevamente $SERVICE_NAME"
-    docker compose up -d $EXTRA_SERVICES $SERVICE_NAME
+    sudo docker compose up -d $EXTRA_SERVICES $SERVICE_NAME
 
     echo "✔ $SERVICE_NAME actualizado!"
     echo ""
@@ -82,6 +82,6 @@ recreate_if_changed "frontend" "$FRONTEND_IMAGE"
 echo ""
 echo "-----------------------------------------------"
 echo "Estado final de los contenedores:"
-docker compose ps
+sudo docker compose ps
 echo "-----------------------------------------------"
 echo "Deploy completo!"
