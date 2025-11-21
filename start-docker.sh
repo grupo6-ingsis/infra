@@ -1,103 +1,41 @@
-#!/bin/bash
 # -----------------------------
-# Script de Deploy con recreación selectiva
+# Script para levantar Docker Compose con login automático a GHCR
 # -----------------------------
-
-set -e   # Si cualquier comando falla, el script se corta automáticamente
-
 # Cargar variables del .env
-set -a
+set -a           # exporta todas las variables automáticamente
 source .env
 set +a
-
+# Variables de entorno (setearlas antes de ejecutar el script o exportarlas en .bashrc/.zshrc)
 GHCR_USER="${GHCR_USER}"
 GHCR_PAT="${GHCR_PAT}"
 
-# -----------------------------
-# Login GHCR
-# -----------------------------
+# Login automático en GHCR
 echo "Haciendo login en GHCR..."
 echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-echo "OK!"
+if [ $? -ne 0 ]; then
+  echo "Error: no se pudo loguear en GHCR"
+  exit 1
+fi
 
-# -----------------------------
-# Función: recrear servicio solo si cambió la imagen
-# -----------------------------
-recreate_if_changed() {
-  SERVICE_NAME="$1"
-  IMAGE="$2"
-  EXTRA_SERVICES="$3"
+# Generar nginx.conf desde template
+echo "Generando nginx.conf desde template..."
+envsubst '${NGINX_SERVER_NAME} ${NGINX_DOMAIN}' < nginx.conf.template > nginx.conf
 
-  echo "-----------------------------------------------"
-  echo "Chequeando imagen para: $SERVICE_NAME"
-  echo "Imagen: $IMAGE"
-  echo "-----------------------------------------------"
 
-  # ============================================================
-  #   OBTENER DIGEST REMOTO DESPUÉS DEL PULL
-  #   docker pull siempre devuelve una línea "Digest: sha256:xxxx"
-  # ============================================================
-  REMOTE_DIGEST=$(sudo docker pull "$IMAGE" | grep Digest | awk '{print $2}')
+sudo docker compose down -v
 
-  # ============================================================
-  #   OBTENER DIGEST LOCAL (FORMA FIABLE)
-  #   'docker images --digests' siempre muestra los digests,
-  #   incluso cuando 'docker inspect' NO los devuelve.
-  # ============================================================
-  LOCAL_DIGEST=$(sudo docker images --digests "$IMAGE" | awk 'NR==2 {print $3}')
+# Pull images with specific tags from .env
+sudo docker pull "$SNIPPET_SERVICE_IMAGE"
+sudo docker pull "$SNIPPET_ENGINE_IMAGE"
+sudo docker pull "$AUTH_SERVICE_IMAGE"
+sudo docker pull "$FRONTEND_IMAGE"
+sudo docker pull ghcr.io/austral-ingsis/snippet-asset-service:main.14
+sudo docker pull mcr.microsoft.com/azure-storage/azurite
 
-  echo "Digest remoto: $REMOTE_DIGEST"
-  echo "Digest local : $LOCAL_DIGEST"
-  echo ""
 
-  # -----------------------------
-  # Comparación real del digest
-  # -----------------------------
-  if [ -z "$LOCAL_DIGEST" ]; then
-    echo "No existe digest local → Instalación inicial"
-    CHANGED=1
-  elif [ "$LOCAL_DIGEST" != "$REMOTE_DIGEST" ]; then
-    echo "La imagen CAMBIÓ → Recreando $SERVICE_NAME"
-    CHANGED=1
-  else
-    echo "La imagen NO cambió → Nada que hacer"
-    CHANGED=0
-  fi
+# Levantar los contenedores
+echo "Levantando Docker Compose..."
+sudo docker compose up --build --pull always -d
 
-  # -----------------------------
-  # Si cambió: recrear servicio + borrar volúmenes del servicio
-  # -----------------------------
-  if [ $CHANGED -eq 1 ]; then
-    echo "→ Borrando contenedores y volúmenes de $SERVICE_NAME"
-    sudo docker compose rm -sfv $SERVICE_NAME $EXTRA_SERVICES
-
-    echo "→ Levantando nuevamente $SERVICE_NAME"
-    sudo docker compose up -d $EXTRA_SERVICES $SERVICE_NAME
-
-    echo "✔ $SERVICE_NAME actualizado!"
-    echo ""
-  fi
-}
-
-# -----------------------------
-# Ejecutar para cada servicio
-# -----------------------------
-
-# SNIPPET SERVICE
-recreate_if_changed "snippet-service" "$SNIPPET_SERVICE_IMAGE" "snippet-service-db"
-
-# SNIPPET ENGINE
-recreate_if_changed "snippet-engine" "$SNIPPET_ENGINE_IMAGE" "snippet-engine-db"
-
-# AUTHORIZATION
-recreate_if_changed "authorization" "$AUTH_SERVICE_IMAGE" "authorization-db"
-
-# FRONTEND
-recreate_if_changed "frontend" "$FRONTEND_IMAGE"
-
-echo ""
-echo "-----------------------------------------------"
-echo "Estado final de los contenedores:"
+# Mostrar estado
 sudo docker compose ps
-echo "-----------------------------------------------"
-echo "Deploy completo!"
