@@ -3,7 +3,7 @@
 # Script de Deploy con recreación selectiva
 # -----------------------------
 
-set -e
+set -e   # Si cualquier comando falla, el script se corta automáticamente
 
 # Cargar variables del .env
 set -a
@@ -33,26 +33,42 @@ recreate_if_changed() {
   echo "Imagen: $IMAGE"
   echo "-----------------------------------------------"
 
-  # Obtener digest remoto
+  # ============================================================
+  #   OBTENER DIGEST REMOTO DESPUÉS DEL PULL
+  #   docker pull siempre devuelve una línea "Digest: sha256:xxxx"
+  # ============================================================
   REMOTE_DIGEST=$(sudo docker pull "$IMAGE" | grep Digest | awk '{print $2}')
 
-  # Obtener digest local
-  LOCAL_DIGEST=$(sudo docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE" 2>/dev/null | cut -d'@' -f2)
+  # ============================================================
+  #   OBTENER DIGEST LOCAL (FORMA FIABLE)
+  #   'docker images --digests' siempre muestra los digests,
+  #   incluso cuando 'docker inspect' NO los devuelve.
+  # ============================================================
+  LOCAL_DIGEST=$(sudo docker images --digests "$IMAGE" | awk 'NR==2 {print $3}')
 
-  # Comparación
+  echo "Digest remoto: $REMOTE_DIGEST"
+  echo "Digest local : $LOCAL_DIGEST"
+  echo ""
+
+  # -----------------------------
+  # Comparación real del digest
+  # -----------------------------
   if [ -z "$LOCAL_DIGEST" ]; then
-    echo "No se encontró digest local → Instalación inicial"
+    echo "No existe digest local → Instalación inicial"
     CHANGED=1
   elif [ "$LOCAL_DIGEST" != "$REMOTE_DIGEST" ]; then
-    echo "La imagen cambió → RECREANDO $SERVICE_NAME"
+    echo "La imagen CAMBIÓ → Recreando $SERVICE_NAME"
     CHANGED=1
   else
-    echo "La imagen NO cambió → NADA QUE HACER"
+    echo "La imagen NO cambió → Nada que hacer"
     CHANGED=0
   fi
 
+  # -----------------------------
+  # Si cambió: recrear servicio + borrar volúmenes del servicio
+  # -----------------------------
   if [ $CHANGED -eq 1 ]; then
-    echo "→ Borrando contenedores y volúmenes solo de $SERVICE_NAME"
+    echo "→ Borrando contenedores y volúmenes de $SERVICE_NAME"
     sudo docker compose rm -sfv $SERVICE_NAME $EXTRA_SERVICES
 
     echo "→ Levantando nuevamente $SERVICE_NAME"
