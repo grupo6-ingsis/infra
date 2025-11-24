@@ -78,7 +78,7 @@ services:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       # To see the logs in the docker logs command
       NEW_RELIC_LOG_FILE_NAME: STDOUT
-      NEW_RELIC_APP_NAME: "snippet-engine"
+      NEW_RELIC_APP_NAME: "Snippet Engine"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     expose:
@@ -120,7 +120,7 @@ services:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       # To see the logs in the docker logs command
       NEW_RELIC_LOG_FILE_NAME: STDOUT
-      NEW_RELIC_APP_NAME: "snippet-service"
+      NEW_RELIC_APP_NAME: "Snippet Service"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     expose:
@@ -158,7 +158,7 @@ services:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       # To see the logs in the docker logs command
       NEW_RELIC_LOG_FILE_NAME: STDOUT
-      NEW_RELIC_APP_NAME: "snippet-service"
+      NEW_RELIC_APP_NAME: "Authorization Service"
     expose:
       - "8080"
     networks:
