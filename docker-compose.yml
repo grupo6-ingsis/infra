@@ -76,6 +76,9 @@ services:
       AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
       AUTH0_TOKEN_URL: ${AUTH0_TOKEN_URL}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+      # To see the logs in the docker logs command
+      NEW_RELIC_LOG_FILE_NAME: STDOUT
+      NEW_RELIC_APP_NAME: "snippet-engine"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     expose:
@@ -117,6 +120,7 @@ services:
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
       # To see the logs in the docker logs command
       NEW_RELIC_LOG_FILE_NAME: STDOUT
+      NEW_RELIC_APP_NAME: "snippet-service"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     expose:
@@ -152,6 +156,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD_AUTHORIZATION}
       AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
       NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY}
+      # To see the logs in the docker logs command
+      NEW_RELIC_LOG_FILE_NAME: STDOUT
+      NEW_RELIC_APP_NAME: "snippet-service"
     expose:
       - "8080"
     networks:
