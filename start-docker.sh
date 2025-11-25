@@ -99,12 +99,15 @@ sudo docker pull mcr.microsoft.com/azure-storage/azurite 2>/dev/null || true
 
 # Comprobación de certificados local (si usás `./certbot/conf`)
 CERT_LOCAL_PATH="./certbot/conf/live/$DOMAIN"
-if [ -n "$CERT_EMAIL" ] && [ -f "$CERT_LOCAL_PATH/fullchain.pem" ]; then
+if [ -d "$CERT_LOCAL_PATH" ] && [ -f "$CERT_LOCAL_PATH/fullchain.pem" ]; then
   echo "Certificates found at $CERT_LOCAL_PATH"
-elif [ -z "$CERT_EMAIL" ]; then
-  echo "Skipping certificate email checks (no LETSENCRYPT_EMAIL/CERTBOT_EMAIL)"
+  # Verificar fecha de expiración
+  openssl x509 -in "$CERT_LOCAL_PATH/fullchain.pem" -noout -enddate 2>/dev/null || echo "Could not read certificate date"
+elif [ -n "$CERT_EMAIL" ]; then
+  echo "WARNING: No certificates found at $CERT_LOCAL_PATH"
+  echo "You may need to run ./init-letsencrypt.sh first"
 else
-  echo "No certificates found at $CERT_LOCAL_PATH"
+  echo "Skipping certificate checks (no LETSENCRYPT_EMAIL set)"
 fi
 echo
 
