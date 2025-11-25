@@ -1,56 +1,56 @@
 #!/bin/bash
 set -euo pipefail
 
-# Archivo: start-docker.sh (mejorado)
-
 # Cargar .env
 set -a
 source .env
 set +a
 
-# Normalizar nombres de dominio/email (soporta variantes)
-DOMAIN="${DOMAIN_NAME:-${NGINX_DOMAIN:-}}"
-CERT_EMAIL="${CERTBOT_EMAIL:-${LETSENCRYPT_EMAIL:-}}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.dev.yml}"
+DOMAIN="${NGINX_DOMAIN:-${DOMAIN_NAME:-}}"
+CERT_EMAIL="${LETSENCRYPT_EMAIL:-${CERTBOT_EMAIL:-}}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 
-: "${DOMAIN:?Error: DOMAIN or NGINX_DOMAIN not set in .env}"
-: "${CERT_EMAIL:?Error: CERTBOT_EMAIL or LETSENCRYPT_EMAIL not set in .env}"
+# No abortar si falta email: solo warn
+if [ -z "$DOMAIN" ]; then
+  echo "Error: `NGINX_DOMAIN` o `DOMAIN_NAME` no está definido en .env"
+  exit 1
+fi
+if [ -z "$CERT_EMAIL" ]; then
+  echo "Warning: no se encontró `LETSENCRYPT_EMAIL` ni `CERTBOT_EMAIL` en .env — se continuará sin comprobación de correo para certbot"
+fi
 
-# Detect docker compose command
-if docker compose version >/dev/null 2>&1; then
-  COMPOSE_CMD="docker compose"
-elif docker-compose version >/dev/null 2>&1; then
-  COMPOSE_CMD="docker-compose"
+# Detectar comando docker compose (con sudo)
+if sudo docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD="sudo docker compose"
+elif sudo docker-compose version >/dev/null 2>&1; then
+  COMPOSE_CMD="sudo docker-compose"
 else
-  echo "Error: neither 'docker compose' nor 'docker-compose' available"
+  echo "Error: neither 'sudo docker compose' nor 'sudo docker-compose' available"
   exit 1
 fi
 
 echo "========================================"
 echo "Starting DEV deployment with HTTPS..."
 echo " Domain: $DOMAIN"
-echo " Email: $CERT_EMAIL"
+echo " Email: ${CERT_EMAIL:-\<none\>}"
 echo " Compose file: $COMPOSE_FILE"
 echo " Compose command: $COMPOSE_CMD"
 echo "========================================"
 echo
 
-# Ensure networks (optional)
-docker network inspect microservices-network >/dev/null 2>&1 || docker network create microservices-network
-docker network inspect frontend-network >/dev/null 2>&1 || docker network create frontend-network
+# Asegurar la red del compose
+sudo docker network inspect group6-gudelker-network >/dev/null 2>&1 || sudo docker network create group6-gudelker-network
 
-# GHCR login if creds present
+# Login GHCR si hay creds
 if [ -n "${GHCR_PAT:-}" ] && [ -n "${GHCR_USER:-}" ]; then
-  echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-  if [ $? -ne 0 ]; then
-    echo "Warning: Could not login to GHCR, continuing anyway"
-  fi
+  echo "Logging in to GHCR..."
+  echo "$GHCR_PAT" | sudo docker login ghcr.io -u "$GHCR_USER" --password-stdin || echo "Warning: GHCR login failed, continúo"
 else
   echo "GHCR credentials not provided, skipping GHCR login"
 fi
 echo
 
-# Mapear variables de imagen a servicio y volúmenes nombrados
+# Mapear imágenes a servicios y volúmenes (ajustar si tu compose cambia nombres)
 declare -A IMAGE_ENV_TO_SERVICE=(
   ["SNIPPET_SERVICE_IMAGE"]="snippet-service"
   ["SNIPPET_ENGINE_IMAGE"]="snippet-engine"
@@ -66,7 +66,6 @@ declare -A SERVICE_TO_VOLUME=(
 
 changed_services=()
 
-# Para cada imagen: comprobar id antes, hacer pull, comprobar id después
 for envvar in "${!IMAGE_ENV_TO_SERVICE[@]}"; do
   image="${!envvar:-}"
   service="${IMAGE_ENV_TO_SERVICE[$envvar]}"
@@ -75,56 +74,54 @@ for envvar in "${!IMAGE_ENV_TO_SERVICE[@]}"; do
     continue
   fi
 
-  echo "Checking image for service $service -> $image"
-
-  pre_id=$(docker image inspect --format='{{.Id}}' "$image" 2>/dev/null || true)
+  echo "Checking image for $service -> $image"
+  pre_id=$(sudo docker image inspect --format='{{.Id}}' "$image" 2>/dev/null || true)
   echo "  before id: ${pre_id:-<missing>}"
 
-  if ! docker pull "$image"; then
-    echo "  Warning: docker pull failed for $image, skipping comparison"
-    continue
-  fi
-
-  post_id=$(docker image inspect --format='{{.Id}}' "$image" 2>/dev/null || true)
-  echo "  after id: ${post_id:-<missing>}"
-
-  if [ "$pre_id" != "$post_id" ]; then
-    echo "  Image changed for $service"
-    changed_services+=("$service")
+  if sudo docker pull "$image"; then
+    post_id=$(sudo docker image inspect --format='{{.Id}}' "$image" 2>/dev/null || true)
+    echo "  after id: ${post_id:-<missing>}"
+    if [ "$pre_id" != "$post_id" ]; then
+      echo "  Image changed for $service"
+      changed_services+=("$service")
+    else
+      echo "  No change for $service"
+    fi
   else
-    echo "  No change for $service"
+    echo "  Warning: docker pull failed for $image, skipping comparison"
   fi
   echo
 done
 
-# Manejar certificados (comprobación básica en volumen nombrado si corresponde)
-CERT_VOLUME="${CERT_VOLUME:-infrastructure_certbot-etc-dev}"
-CERT_PATH="/etc/letsencrypt/live/$DOMAIN"
-echo "Checking SSL certificates in volume $CERT_VOLUME..."
-if docker run --rm -v "$CERT_VOLUME":/etc/letsencrypt alpine test -f "$CERT_PATH/fullchain.pem"; then
-  CERT_EXPIRES=$(docker run --rm -v "$CERT_VOLUME":/etc/letsencrypt alpine sh -c "apk add --no-cache openssl >/dev/null 2>&1 && openssl x509 -noout -enddate -in $CERT_PATH/fullchain.pem | cut -d= -f2" || echo "Unknown")
-  echo "  Certificates found, expires: $CERT_EXPIRES"
+# Pull de imágenes extra usadas en compose
+sudo docker pull ghcr.io/austral-ingsis/snippet-asset-service:main.14 2>/dev/null || true
+sudo docker pull mcr.microsoft.com/azure-storage/azurite 2>/dev/null || true
+
+# Comprobación de certificados local (si usás `./certbot/conf`)
+CERT_LOCAL_PATH="./certbot/conf/live/$DOMAIN"
+if [ -n "$CERT_EMAIL" ] && [ -f "$CERT_LOCAL_PATH/fullchain.pem" ]; then
+  echo "Certificates found at $CERT_LOCAL_PATH"
+elif [ -z "$CERT_EMAIL" ]; then
+  echo "Skipping certificate email checks (no LETSENCRYPT_EMAIL/CERTBOT_EMAIL)"
 else
-  echo "  No certificates found in volume $CERT_VOLUME (will continue)"
+  echo "No certificates found at $CERT_LOCAL_PATH"
 fi
 echo
 
-# Si hay servicios cambiados: stop + rm con volúmenes nombrados mapeados
+# Recreate services with changed images, eliminando volúmenes nombrados correspondientes
 if [ ${#changed_services[@]} -gt 0 ]; then
   echo "Services with changed images: ${changed_services[*]}"
   for svc in "${changed_services[@]}"; do
     vol="${SERVICE_TO_VOLUME[$svc]:-}"
-    echo "Recreating service $svc"
-    # Stop and remove container (and anonymous volumes). For named volumes, remove explicitly.
+    echo "Recreating $svc"
     $COMPOSE_CMD -f "$COMPOSE_FILE" stop "$svc" || true
     $COMPOSE_CMD -f "$COMPOSE_FILE" rm -s -f -v "$svc" || true
-
     if [ -n "$vol" ]; then
-      if docker volume inspect "$vol" >/dev/null 2>&1; then
+      if sudo docker volume inspect "$vol" >/dev/null 2>&1; then
         echo "  Removing named volume $vol"
-        docker volume rm "$vol" || true
+        sudo docker volume rm "$vol" || true
       else
-        echo "  Named volume $vol does not exist or already removed"
+        echo "  Named volume $vol does not exist"
       fi
     fi
   done
@@ -143,5 +140,3 @@ sleep 10
 
 echo "Service status:"
 $COMPOSE_CMD -f "$COMPOSE_FILE" ps
-echo
-echo "DEV DEPLOYMENT COMPLETED"
